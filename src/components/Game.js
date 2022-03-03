@@ -7,6 +7,10 @@ export default class Game extends Component {
   static propTypes = {
     randomNumberCount: PropTypes.number.isRequired,
   };
+
+  state = {
+    selectedIds: [],
+  };
   randomNumbers = Array.from({length: this.props.randomNumberCount}).map(
     () => 1 + Math.floor(10 * Math.random()),
   );
@@ -14,13 +18,50 @@ export default class Game extends Component {
   target = this.randomNumbers
     .slice(0, this.props.randomNumberCount - 2)
     .reduce((acc, curr) => acc + curr, 0);
+
+  isNumberSelected = numberIndex => {
+    return this.state.selectedIds.indexOf(numberIndex) >= 0;
+  };
+
+  selectNumber = numberIndex => {
+    this.setState(prevState => ({
+      selectedIds: [...prevState.selectedIds, numberIndex],
+    }));
+  };
+  gameStatus = () => {
+    const sumSelected = this.state.selectedIds.reduce((acc, curr) => {
+      return acc + this.randomNumbers[curr];
+    }, 0);
+    if (sumSelected < this.target) {
+      return 'PLAYING';
+    }
+    if (sumSelected === this.target) {
+      return 'WON';
+    }
+
+    if (sumSelected > this.target) {
+      return 'LOST';
+    }
+  };
+
   render() {
+    const gameStatus = this.gameStatus();
     return (
       <View style={styles.container}>
-        <Text style={styles.target}>{this.target}</Text>
+        <Text style={[styles.target, styles[`STATUS_${gameStatus}`]]}>
+          {this.target}
+        </Text>
         <View style={styles.randomContainer}>
           {this.randomNumbers.map((number, index) => (
-            <RandomNumber key={index} number={number} />
+            <RandomNumber
+              isDisabled={
+                this.isNumberSelected(index) || gameStatus !== 'PLAYING'
+              }
+              key={index}
+              number={number}
+              onPress={this.selectNumber}
+              id={index}
+            />
           ))}
         </View>
       </View>
@@ -52,5 +93,14 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'space-around',
     border: '2px solid red',
+  },
+  STATUS_PLAYING: {
+    backgroundColor: '#bbb',
+  },
+  STATUS_WON: {
+    backgroundColor: 'green',
+  },
+  STATUS_LOST: {
+    backgroundColor: 'red',
   },
 });
